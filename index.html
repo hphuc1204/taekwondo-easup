@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIẢI TAEKWONDO CÁC CLB EA SÚP</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+ <style>
+        :root { 
+            --primary: #1e3a8a; 
+            --accent: #dc2626; 
+            --gold: #f59e0b; 
+            --gold-light: #fffcf0;
+            --silver: #94a3b8;
+            --silver-light: #f8fafc;
+            --bronze: #b45309;
+            --bronze-light: #fff7ed;
+        }
+        
+        @page { size: A4 landscape; margin: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e2e8f0; margin: 0; padding: 0; font-size: 11px; color: #1e293b; }
+
+        /* ẨN TIÊU ĐỀ KHI IN */
+        @media print {
+            .main-header { display: none !important; }
+        }
+
+        .main-header { background: #1e3a8a; color: white; padding: 15px; text-align: center; width: 100%; box-sizing: border-box; }
+        .main-header h1 { margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900; }
+
+        .no-print { max-width: 1100px; margin: 15px auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 10px;}
+        .tab-btn { padding: 10px 20px; border: none; cursor: pointer; background: #f1f5f9; border-radius: 6px 6px 0 0; font-weight: 700; color: #64748b; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .print-btn { background: #1e293b; color: white; padding: 12px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; float: right; }
+
+        .weight-class-card { 
+            background: white; width: 1100px; min-height: 700px; margin: 50px auto; padding: 40px; 
+            box-sizing: border-box; display: flex; flex-direction: column; border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); page-break-after: always;
+        }
+        .weight-header { border-left: 8px solid var(--accent); padding-left: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .weight-title { font-size: 26px; font-weight: 800; text-transform: uppercase; color: var(--primary); }
+        .bracket-container { display: flex; align-items: center; gap: 40px; flex: 1; justify-content: center; }
+        .round { display: flex; flex-direction: column; justify-content: space-around; height: 100%; min-height: 600px; }
+        .match-wrap { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+
+        /* SỐ TRẬN: dùng wrapper chứa div hiển thị + input ẩn chồng lên */
+        .match-num-wrap {
+            position: relative; width: 45px; height: 45px; flex-shrink: 0;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        .match-num-display {
+            width: 45px; height: 45px; background: #000; color: white;
+            border-radius: 5px; font-weight: bold; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            user-select: none; pointer-events: none;
+        }
+        .match-num-input {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; border: none; background: transparent;
+            font-size: 18px; font-weight: bold; text-align: center; color: white;
+            border-radius: 5px;
+        }
+        body:not(.admin-mode) .match-num-input { pointer-events: none !important; }
+        .match-num-input:focus {
+            opacity: 1; background: #222; color: white; outline: 2px solid #60a5fa;
+        }
+
+        .match { width: 180px; border: 2px solid #000; background: white; border-radius: 8px; overflow: hidden; }
+        .player-slot { padding: 10px 12px; min-height: 40px; font-size: 14px; border-bottom: 2px solid #000; display: flex; justify-content: space-between; align-items: center; line-height: 1.5; }
+        .player-slot:last-child { border-bottom: none; }
+        .player-name { font-weight: 700; flex: 1; color: #000; }
+        .unit-name { font-size: 11px; font-weight: normal; color: #444; display: block; }
+        .btn-win { padding: 8px 12px; font-size: 11px; background: #10b981; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .winner-box { width: 180px; padding: 30px; border: 6px double var(--gold); background: #fffcf0; border-radius: 15px; text-align: center; margin-left: 30px; }
+
+        /* Nút lưu ảnh */
+        .save-img-btn {
+            background: #7c3aed; color: white; padding: 7px 16px; border-radius: 6px;
+            border: none; cursor: pointer; font-weight: bold; font-size: 13px;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .save-img-btn:hover { background: #6d28d9; }
+        .card-actions { display: flex; align-items: center; gap: 10px; }
+
+        .medal-section { background: white; padding: 40px; border-radius: 20px; max-width: 1100px; margin: 30px auto; box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
+        .medal-section h2 { text-align: center; color: var(--primary); font-size: 24px; text-transform: uppercase; margin-bottom: 30px; font-weight: 800; border-bottom: 3px solid var(--primary); display: inline-block; width: 100%; padding-bottom: 10px; }
+        
+        .styled-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
+        .styled-table thead tr { background-color: var(--primary); color: white; text-align: center; }
+        .styled-table th, .styled-table td { padding: 15px 12px; border: 1px solid #e2e8f0; }
+        .styled-table tbody tr:hover { background-color: #f8fafc; }
+
+        .col-gold { background-color: var(--gold-light); color: #92400e; font-weight: 700; }
+        .col-silver { background-color: var(--silver-light); color: #475569; font-weight: 700; }
+        .col-bronze { background-color: var(--bronze-light); color: var(--bronze); font-weight: 700; }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
+        .badge-gold { background: var(--gold); color: white; }
+        .badge-silver { background: var(--silver); color: white; }
+        .badge-bronze { background: var(--bronze); color: white; }
+        .unit-strong { font-size: 16px; color: var(--primary); font-weight: 700; }
+
+        @media print {
+            /* Ẩn toàn bộ điều khiển khi in */
+            .no-print, .btn-win, .delete-btn, .save-img-btn,
+            .match-num-input, .admin-bar, .card-actions { display: none !important; }
+            
+            body { background: white !important; padding-top: 0 !important; margin: 0 !important; }
+            html, body { width: 297mm; }
+
+            /* Mỗi card vừa đúng 1 trang A4 ngang */
+            .weight-class-card {
+                width: 277mm !important;
+                min-height: unset !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 8mm 10mm !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                display: flex !important;
+                flex-direction: column !important;
+                transform: none !important;
+            }
+
+            /* Thu nhỏ font và khoảng cách để vừa trang */
+            .weight-title { font-size: 16px !important; }
+            .weight-header { margin-bottom: 8px !important; padding-left: 10px !important; border-left-width: 5px !important; }
+            .bracket-container { gap: 15px !important; flex: 1 !important; }
+            .round { min-height: unset !important; }
+            .match-wrap { margin: 6px 0 !important; gap: 6px !important; }
+            .match { width: 150px !important; }
+            .player-slot { padding: 6px 8px !important; min-height: 30px !important; font-size: 11px !important; }
+            .player-name { font-size: 11px !important; }
+            .unit-name { font-size: 9px !important; }
+            .match-num-display { width: 32px !important; height: 32px !important; font-size: 13px !important; }
+            .match-num-wrap { width: 32px !important; height: 32px !important; }
+            .winner-box { width: 130px !important; padding: 12px !important; margin-left: 10px !important; }
+            .winner-box div:nth-child(2) { font-size: 16px !important; margin: 8px 0 !important; }
+
+            .medal-section { box-shadow: none; width: 100%; padding: 0; margin: 0; }
+            .styled-table th { background-color: #eee !important; color: black !important; }
+            .match-num-display { display: flex !important; }
+        }
+        .hidden { display: none !important; }
+
+        /* ========== ADMIN LOGIN ========== */
+        .admin-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: #0f172a; color: white;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px;
+        }
+        .admin-bar .ab-left { display: flex; align-items: center; gap: 12px; }
+        .admin-bar .ab-status { 
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #1e293b; border-radius: 20px; padding: 5px 14px;
+            font-weight: 600;
+        }
+        .admin-bar .ab-status .dot { 
+            width: 8px; height: 8px; border-radius: 50%; background: #64748b; 
+        }
+        .admin-bar .ab-status.logged-in .dot { background: #22c55e; }
+        .admin-bar .ab-status.logged-in { color: #86efac; }
+        .admin-bar input[type=password] {
+            padding: 6px 12px; border-radius: 6px; border: 1px solid #334155;
+            background: #1e293b; color: white; font-size: 13px; width: 160px;
+            outline: none;
+        }
+        .admin-bar input[type=password]:focus { border-color: #60a5fa; }
+        .admin-bar button.ab-btn {
+            padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer;
+            font-weight: 700; font-size: 13px;
+        }
+        .ab-btn-login { background: #2563eb; color: white; }
+        .ab-btn-login:hover { background: #1d4ed8; }
+        .ab-btn-logout { background: #dc2626; color: white; }
+        .ab-btn-logout:hover { background: #b91c1c; }
+        .ab-label { color: #94a3b8; font-size: 12px; }
+
+        /* Đẩy nội dung xuống dưới admin bar */
+        body { padding-top: 48px; }
+
+        /* Ẩn toàn bộ khu vực admin-only khi chưa đăng nhập */
+        body:not(.admin-mode) .admin-only { display: none !important; }
+        body.admin-mode .admin-only { display: flex !important; }
+
+        @media print {
+            .admin-bar { display: none !important; }
+            body { padding-top: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+
+<!-- ADMIN BAR -->
+<div class="admin-bar" id="adminBar">
+    <div class="ab-left">
+        <span class="ab-label">🏆 QUẢN LÝ GIẢI</span>
+        <span class="ab-status" id="abStatus">
+            <span class="dot"></span>
+            <span id="abStatusText">Chế độ xem</span>
+        </span>
+    </div>
+    <div class="ab-left" id="abLoginArea">
+        <input type="password" id="adminPwInput" placeholder="Nhập mật khẩu admin..." onkeydown="if(event.key==='Enter') adminLogin()">
+        <button class="ab-btn ab-btn-login" onclick="adminLogin()">🔐 Đăng nhập</button>
+    </div>
+    <div id="abLogoutArea" style="display:none">
+        <button class="ab-btn ab-btn-logout" onclick="adminLogout()">🚪 Đăng xuất</button>
+    </div>
+</div>
+
+<header class="main-header">
+    <h1>GIẢI TAEKWONDO CÁC CLB EA SÚP</h1>
+</header>
+
+<div class="no-print">
+    <button class="print-btn admin-only" onclick="window.print()">🖨️ IN DỮ LIỆU (A4 NGANG)</button>
+    <div class="nav-tabs">
+        <button class="tab-btn active" id="btn-bracket" onclick="switchTab('bracket')">SƠ ĐỒ THI ĐẤU</button>
+        <button class="tab-btn" id="btn-medals" onclick="switchTab('medals')">TOÀN ĐOÀN</button>
+        <button class="tab-btn" id="btn-results" onclick="switchTab('results')">CHI TIẾT HUY CHƯƠNG</button>
+    </div>
+
+    <div class="admin-only" style="display: flex; gap: 15px; align-items: center; background: #f1f5f9; padding: 15px; border-radius: 8px;">
+        <select id="importType" style="padding: 10px; border-radius: 4px; border:1px solid #cbd5e1">
+            <option value="Đối kháng">ĐỐI KHÁNG</option>
+            <option value="Quyền">QUYỀN</option>
+            <option value="Đồng đội">ĐỒNG ĐỘI</option>
+        </select>
+        <input type="file" onchange="importExcel(event)">
+        <button class="tab-btn" style="background:#10b981; color:white; border-radius:4px" onclick="drawAllInTab()">BỐC THĂM</button>
+        <button class="tab-btn" style="background:#ef4444; color:white; border-radius:4px" onclick="clearData()">XÓA HẾT DỮ LIỆU</button>
+    </div>
+    
+    <div class="nav-tabs" style="border:none; margin-top:10px">
+        <button class="tab-btn sub-tab active" onclick="filterType('Đối kháng')">ĐỐI KHÁNG</button>
+        <button class="tab-btn sub-tab" onclick="filterType('Quyền')">QUYỀN</button>
+        <button class="tab-btn sub-tab" onclick="filterType('Đồng đội')">ĐỒNG ĐỘI</button>
+    </div>
+</div>
+
+<div id="section-bracket" class="tab-content">
+    <div id="masterContainer"></div>
+</div>
+
+<div id="section-medals" class="tab-content hidden">
+    <div class="medal-section">
+        <h2>BẢNG TỔNG SẮP TOÀN ĐOÀN</h2>
+        <table id="rankTable" class="styled-table">
+            <thead>
+                <tr>
+                    <th width="80">HẠNG</th>
+                    <th>ĐƠN VỊ</th>
+                    <th width="120">VÀNG</th>
+                    <th width="120">BẠC</th>
+                    <th width="120">ĐỒNG</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="section-results" class="tab-content hidden">
+    <div class="medal-section">
+        <h2>CHI TIẾT KẾT QUẢ HUY CHƯƠNG</h2>
+        <table id="detailTable" class="styled-table">
+            <thead>
+                <tr>
+                    <th width="200">NỘI DUNG / HẠNG CÂN</th>
+                    <th><span class="badge badge-gold">Vàng</span></th>
+                    <th><span class="badge badge-silver">Bạc</span></th>
+                    <th><span class="badge badge-bronze">Đồng</span></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let tournamentData = JSON.parse(localStorage.getItem('tkd_easup_v9')) || [];
+    let currentFilter = 'Đối kháng';
+
+    function saveData() { localStorage.setItem('tkd_easup_v9', JSON.stringify(tournamentData)); }
+    function clearData() { if(confirm("Cảnh báo: Xóa sạch dữ liệu?")) { tournamentData=[]; saveData(); renderAll(); } }
+
+    function switchTab(t) {
+        ['bracket', 'medals', 'results'].forEach(id => {
+            document.getElementById(`section-${id}`).classList.add('hidden');
+            document.getElementById(`btn-${id}`).classList.remove('active');
+        });
+        document.getElementById(`section-${t}`).classList.remove('hidden');
+        document.getElementById(`btn-${t}`).classList.add('active');
+        if(t !== 'bracket') updateMedals();
+    }
+
+    function filterType(type) {
+        currentFilter = type;
+        document.querySelectorAll('.sub-tab').forEach(btn => btn.classList.toggle('active', btn.innerText.includes(type.toUpperCase())));
+        renderAll();
+    }
+
+    function importExcel(event) {
+        const type = document.getElementById('importType').value;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+            wb.SheetNames.forEach(name => {
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[name], {header: 1});
+                let list = [];
+                json.forEach((row, i) => { if(row[0] && i>0) list.push({name: row[0].toString(), unit: row[1]?.toString() || ""}); });
+                if(list.length > 0) {
+                    tournamentData.push({
+                        id: Date.now()+Math.random(), title: name, type: type,
+                        inputs: list, bracket: Array(15).fill({name:"--", unit:""}),
+                        matchNums: Array(7).fill("")
+                    });
+                }
+            });
+            saveData(); renderAll();
+        };
+        reader.readAsArrayBuffer(event.target.files[0]);
+    }
+
+    function drawAllInTab() {
+        tournamentData.filter(d => d.type === currentFilter).forEach(w => {
+            let list = [...w.inputs.filter(v => v.name.trim() !== "" && v.name !== "--")];
+            let fb = Array(15).fill(null).map(() => ({name:"--", unit:""}));
+
+            list.sort(() => Math.random() - 0.5);
+            const n = list.length;
+
+            if (n === 8) {
+                for (let i = 0; i < 8; i++) fb[i] = list[i];
+
+            } else if (n === 7) {
+                const byePairIndex = Math.floor(Math.random() * 4);
+                let playerIndex = 0;
+                for (let pair = 0; pair < 4; pair++) {
+                    const slot1 = pair * 2, slot2 = pair * 2 + 1;
+                    if (pair === byePairIndex) {
+                        fb[slot1] = list[playerIndex++];
+                        fb[slot2] = {name: "(Miễn đấu)", unit: ""};
+                        fb[8 + pair] = fb[slot1];
+                    } else {
+                        fb[slot1] = list[playerIndex++];
+                        fb[slot2] = list[playerIndex++];
+                    }
+                }
+
+            } else if (n === 6) {
+                const byePair1 = Math.floor(Math.random() * 2);
+                const byePair2 = 2 + Math.floor(Math.random() * 2);
+                const byePairs = [byePair1, byePair2];
+                let playerIndex = 0;
+                for (let pair = 0; pair < 4; pair++) {
+                    const slot1 = pair * 2, slot2 = pair * 2 + 1;
+                    if (byePairs.includes(pair)) {
+                        fb[slot1] = list[playerIndex++];
+                        fb[slot2] = {name: "(Miễn đấu)", unit: ""};
+                        fb[8 + pair] = fb[slot1];
+                    } else {
+                        fb[slot1] = list[playerIndex++];
+                        fb[slot2] = list[playerIndex++];
+                    }
+                }
+
+            } else if (n === 5) {
+                const heavyByeBranch = Math.random() < 0.5 ? 0 : 1;
+                const byePairInLightBranch = Math.floor(Math.random() * 2);
+                let playerIndex = 0;
+                for (let pair = 0; pair < 4; pair++) {
+                    const branch = pair < 2 ? 0 : 1;
+                    const posInBranch = pair % 2;
+                    const slot1 = pair * 2, slot2 = pair * 2 + 1;
+                    const isBye = (branch === heavyByeBranch) || (posInBranch === byePairInLightBranch);
+                    if (isBye) {
+                        fb[slot1] = list[playerIndex++];
+                        fb[slot2] = {name: "(Miễn đấu)", unit: ""};
+                        fb[8 + pair] = fb[slot1];
+                    } else {
+                        fb[slot1] = list[playerIndex++];
+                        fb[slot2] = list[playerIndex++];
+                    }
+                }
+
+            } else if (n === 4) {
+                fb[8] = list[0]; fb[9] = list[1]; fb[10] = list[2]; fb[11] = list[3];
+
+            } else if (n === 3) {
+                fb[8] = list[0]; fb[9] = list[1];
+                fb[10] = {name: "(Miễn đấu)", unit: ""};
+                fb[11] = list[2];
+                fb[13] = list[2];
+
+            } else if (n > 0) {
+                fb[12] = list[0];
+                fb[13] = list[1] || {name: "(Miễn đấu)", unit: ""};
+            }
+
+            w.bracket = fb;
+        });
+
+        saveData();
+        renderAll();
+        if (typeof updateMedals === "function") updateMedals();
+    }
+
+    function setWin(wid, from, to) {
+        const w = tournamentData.find(x => x.id === wid);
+        w.bracket[to] = w.bracket[from];
+        saveData(); renderAll();
+    }
+
+    // =============================================
+    // VALIDATE SỐ TRẬN: chỉ nhập theo thứ tự 1,2,3,...
+    // =============================================
+    function updateMatchNum(wid, idx, val) {
+        const w = tournamentData.find(x => x.id === wid);
+        if (!w.matchNums) w.matchNums = Array(7).fill("");
+
+        const trimmed = val.trim();
+
+        // Cho phép xóa trắng
+        if (trimmed === "") {
+            w.matchNums[idx] = "";
+            saveData();
+            renderAll();
+            return;
+        }
+
+        const num = parseInt(trimmed, 10);
+        if (isNaN(num) || num < 1 || String(num) !== trimmed) {
+            alert("Vui lòng nhập số trận hợp lệ (số nguyên dương).");
+            renderAll();
+            return;
+        }
+
+        // Tính số trận lớn nhất hiện có (bỏ qua ô đang sửa)
+        let maxNum = 0;
+        tournamentData.forEach(d => {
+            if (!d.matchNums) return;
+            d.matchNums.forEach((m, i) => {
+                if (d.id === wid && i === idx) return; // bỏ qua ô đang sửa
+                if (m !== "") maxNum = Math.max(maxNum, parseInt(m, 10));
+            });
+        });
+
+        // Kiểm tra trùng
+        let isDuplicate = false;
+        tournamentData.forEach(d => {
+            if (!d.matchNums) return;
+            d.matchNums.forEach((m, i) => {
+                if (d.id === wid && i === idx) return;
+                if (m !== "" && parseInt(m, 10) === num) isDuplicate = true;
+            });
+        });
+
+        if (isDuplicate) {
+            alert("Số trận " + num + " đã được sử dụng. Vui lòng nhập số trận khác.");
+            renderAll();
+            return;
+        }
+
+        if (num !== maxNum + 1) {
+            alert("Vui lòng nhập theo thứ tự. Số trận tiếp theo phải là " + (maxNum + 1) + ".");
+            renderAll();
+            return;
+        }
+
+        w.matchNums[idx] = String(num);
+        saveData();
+        renderAll();
+    }
+
+    // =============================================
+    // LƯU ẢNH: dùng onclone để thay input → div căn giữa
+    // =============================================
+    function saveCardImage(cardEl, title) {
+        html2canvas(cardEl, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            onclone: (doc, clonedEl) => {
+                // Ẩn toàn bộ nút bấm, card-actions
+                clonedEl.querySelectorAll('.no-print, .btn-win, .save-img-btn, .card-actions').forEach(el => {
+                    el.style.display = 'none';
+                });
+                // Thay mỗi .match-num-input (ẩn) bằng div căn giữa đẹp
+                clonedEl.querySelectorAll('.match-num-wrap').forEach(wrap => {
+                    const inp = wrap.querySelector('.match-num-input');
+                    const val = inp ? inp.value : '';
+                    // Xóa input ẩn, để lại display div và cập nhật giá trị
+                    if (inp) inp.remove();
+                    const display = wrap.querySelector('.match-num-display');
+                    if (display) {
+                        display.textContent = val;
+                        display.style.pointerEvents = 'none';
+                        display.style.opacity = '1';
+                    }
+                });
+            }
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = title + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(() => {
+            alert('Không thể lưu ảnh. Vui lòng thử lại.');
+        });
+    }
+
+    // Helper tạo match-num-wrap HTML
+    function matchNumHtml(wid, idx, val) {
+        return `<div class="match-num-wrap">
+            <div class="match-num-display">${val || ''}</div>
+            <input type="text" class="match-num-input" value="${val}" onchange="updateMatchNum(${wid}, ${idx}, this.value)" title="Nhập số trận">
+        </div>`;
+    }
+
+    function renderAll() {
+        const container = document.getElementById('masterContainer');
+        container.innerHTML = "";
+        const filtered = tournamentData.filter(d => d.type === currentFilter);
+
+        filtered.forEach((w) => {
+            const disp = (v) => (v.name === "--" || v.name === "(Miễn đấu)") ? v.name : `<div><span class="player-name">${v.name}</span><span class="unit-name">${v.unit}</span></div>`;
+            if(!w.matchNums) w.matchNums = Array(7).fill("");
+
+            const cardId = `card-${w.id}`;
+            const card = document.createElement('div');
+            card.className = 'weight-class-card';
+            card.id = cardId;
+            card.innerHTML = `
+                <div class="weight-header">
+                    <div class="weight-title">${w.title} (${w.type})</div>
+                    <div class="card-actions no-print admin-only">
+                        <button class="save-img-btn" onclick="saveCardImage(document.getElementById('${cardId}'), '${w.title.replace(/'/g,"\\'")} (${w.type})')">📷 LƯU ẢNH</button>
+                        <button onclick="deleteItem(${w.id})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold">XÓA HẠNG CÂN</button>
+                    </div>
+                </div>
+                <div class="bracket-container">
+                    <div class="round">${[0,2,4,6].map((i,idx)=>`
+                        <div class="match-wrap">
+                            ${matchNumHtml(w.id, idx, w.matchNums[idx])}
+                            <div class="match">
+                                <div class="player-slot">${disp(w.bracket[i])} <button class="btn-win no-print admin-only" onclick="setWin(${w.id},${i},${8+idx})">W</button></div>
+                                <div class="player-slot">${disp(w.bracket[i+1])} <button class="btn-win no-print admin-only" onclick="setWin(${w.id},${i+1},${8+idx})">W</button></div>
+                            </div>
+                        </div>`).join('')}
+                    </div>
+                    <div class="round">${[8,10].map((i,idx)=>`
+                        <div class="match-wrap">
+                            ${matchNumHtml(w.id, 4+idx, w.matchNums[4+idx])}
+                            <div class="match">
+                                <div class="player-slot">${disp(w.bracket[i])} <button class="btn-win no-print admin-only" onclick="setWin(${w.id},${i},${12+idx})">W</button></div>
+                                <div class="player-slot">${disp(w.bracket[i+1])} <button class="btn-win no-print admin-only" onclick="setWin(${w.id},${i+1},${12+idx})">W</button></div>
+                            </div>
+                        </div>`).join('')}
+                    </div>
+                    <div class="round">
+                        <div class="match-wrap">
+                            ${matchNumHtml(w.id, 6, w.matchNums[6])}
+                            <div class="match" style="border-color:var(--gold); border-width:4px">
+                                <div class="player-slot">${disp(w.bracket[12])} <button class="btn-win no-print admin-only" onclick="setWin(${w.id},12,14)">W</button></div>
+                                <div class="player-slot">${disp(w.bracket[13])} <button class="btn-win no-print admin-only" onclick="setWin(${w.id},13,14)">W</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="winner-box">
+                        <div style="font-size:14px; color:var(--gold); font-weight:bold;">VÔ ĐỊCH (HCV)</div>
+                        <div style="font-weight:900; font-size:24px; margin:15px 0; color:var(--primary);">${w.bracket[14].name}</div>
+                        <div style="font-size:16px; font-weight:bold">${w.bracket[14].unit}</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function updateMedals() {
+        const stats = {}; const results = [];
+        tournamentData.forEach(w => {
+            const gold = w.bracket[14]; 
+            const silver = (gold && gold.name !== "--") ? ((w.bracket[12].name === gold.name) ? w.bracket[13] : w.bracket[12]) : {name:"--", unit:""};
+
+            let bronzeList = [];
+            
+            if (w.bracket[12].name !== "--") {
+                const b1 = (w.bracket[8].name === w.bracket[12].name) ? w.bracket[9] : w.bracket[8];
+                if (b1.name !== "--" && b1.name !== "(Miễn đấu)") bronzeList.push(b1);
+            } else {
+                if (w.bracket[8].name !== "--" && w.bracket[8].name !== "(Miễn đấu)") bronzeList.push(w.bracket[8]);
+                if (w.bracket[9].name !== "--" && w.bracket[9].name !== "(Miễn đấu)") bronzeList.push(w.bracket[9]);
+            }
+
+            if (w.bracket[13].name !== "--") {
+                const b2 = (w.bracket[10].name === w.bracket[13].name) ? w.bracket[11] : w.bracket[10];
+                if (b2.name !== "--" && b2.name !== "(Miễn đấu)") bronzeList.push(b2);
+            } else {
+                if (w.bracket[10].name !== "--" && w.bracket[10].name !== "(Miễn đấu)") bronzeList.push(w.bracket[10]);
+                if (w.bracket[11].name !== "--" && w.bracket[11].name !== "(Miễn đấu)") bronzeList.push(w.bracket[11]);
+            }
+            
+            bronzeList = bronzeList.filter((item, index) => 
+                item.name !== gold.name && 
+                item.name !== silver.name &&
+                bronzeList.findIndex(t => t.name === item.name) === index
+            );
+
+            results.push({ title: `${w.title} (${w.type})`, g: gold, s: silver, d: bronzeList });
+
+            const addStats = (v, type) => {
+                if(!v || !v.unit || v.name === "--" || v.name === "(Miễn đấu)") return;
+                const u = v.unit.trim();
+                if(!stats[u]) stats[u] = {v:0, b:0, d:0};
+                if(type === 'v') stats[u].v++;
+                else if(type === 'b') stats[u].b++;
+                else if(type === 'd') stats[u].d++;
+            };
+
+            if(gold.name !== "--") addStats(gold, 'v');
+            if(silver.name !== "--") addStats(silver, 'b');
+            bronzeList.forEach(b => addStats(b, 'd'));
+        });
+
+        const sorted = Object.entries(stats).sort((a, b) => {
+            if (b[1].v !== a[1].v) return b[1].v - a[1].v;
+            if (b[1].b !== a[1].b) return b[1].b - a[1].b;
+            return b[1].d - a[1].d;
+        });
+
+        document.querySelector("#rankTable tbody").innerHTML = sorted.map(([u, d], i) => `
+            <tr>
+                <td align="center"><strong>${i+1}</strong></td>
+                <td><span class="unit-strong">${u}</span></td>
+                <td align="center" class="col-gold">${d.v}</td>
+                <td align="center" class="col-silver">${d.b}</td>
+                <td align="center" class="col-bronze">${d.d}</td>
+            </tr>
+        `).join('');
+
+        document.querySelector("#detailTable tbody").innerHTML = results.map(r => `
+            <tr>
+                <td style="text-align:left"><strong>${r.title}</strong></td>
+                <td class="col-gold"><strong>${r.g.name !== "--" ? r.g.name : ""}</strong><br><small>${r.g.unit || ""}</small></td>
+                <td class="col-silver"><strong>${r.s.name !== "--" ? r.s.name : ""}</strong><br><small>${r.s.unit || ""}</small></td>
+                <td class="col-bronze">
+                    ${r.d.map(x => `• ${x.name} (${x.unit})`).join("<br>")}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function deleteItem(id) { if(confirm("Xóa nội dung này?")) { tournamentData = tournamentData.filter(x => x.id !== id); saveData(); renderAll(); } }
+
+
+    // ========== ADMIN AUTH ==========
+    const ADMIN_PASSWORD = "easup2026"; // ← ĐỔI MẬT KHẨU TẠI ĐÂY
+
+    function checkAdminSession() {
+        if (sessionStorage.getItem('tkd_admin') === 'yes') {
+            applyAdminMode(true, false);
+        }
+    }
+
+    function adminLogin() {
+        const val = document.getElementById('adminPwInput').value;
+        if (val === ADMIN_PASSWORD) {
+            sessionStorage.setItem('tkd_admin', 'yes');
+            applyAdminMode(true, true);
+            document.getElementById('adminPwInput').value = '';
+        } else {
+            alert('❌ Sai mật khẩu! Vui lòng thử lại.');
+            document.getElementById('adminPwInput').value = '';
+            document.getElementById('adminPwInput').focus();
+        }
+    }
+
+    function adminLogout() {
+        sessionStorage.removeItem('tkd_admin');
+        applyAdminMode(false, true);
+    }
+
+    function applyAdminMode(isAdmin, notify) {
+        document.body.classList.toggle('admin-mode', isAdmin);
+        document.getElementById('abStatus').classList.toggle('logged-in', isAdmin);
+        document.getElementById('abStatusText').textContent = isAdmin ? 'Chế độ Admin' : 'Chế độ xem';
+        document.getElementById('abLoginArea').style.display = isAdmin ? 'none' : 'flex';
+        document.getElementById('abLogoutArea').style.display = isAdmin ? 'flex' : 'none';
+        if (notify) {
+            if (isAdmin) {
+                showToast('✅ Đăng nhập thành công! Bạn đang ở chế độ Admin.', '#22c55e');
+            } else {
+                showToast('👁️ Đã đăng xuất. Chuyển về chế độ xem.', '#64748b');
+            }
+        }
+        renderAll();
+    }
+
+    function showToast(msg, color) {
+        const t = document.createElement('div');
+        t.textContent = msg;
+        t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:' + color + ';color:white;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;z-index:99999;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:opacity 0.5s';
+        document.body.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 500); }, 2500);
+    }
+
+    window.onload = function() { renderAll(); checkAdminSession(); };
+</script>
+</body>
+</html>
